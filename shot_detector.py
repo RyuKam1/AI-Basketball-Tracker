@@ -23,7 +23,7 @@ class ShotDetector:
         # self.cap = cv2.VideoCapture(0)
 
         # Use video - replace text with your video path
-        self.cap = cv2.VideoCapture("video_test_5.mp4")
+        self.cap = cv2.VideoCapture("video_levana.mp4")
 
         self.ball_pos = []  # array of tuples ((x_pos, y_pos), frame count, width, height, conf)
         self.hoop_pos = []  # array of tuples ((x_pos, y_pos), frame count, width, height, conf)
@@ -46,6 +46,36 @@ class ShotDetector:
         self.overlay_color = (0, 0, 0)
 
         self.run()
+
+    def resize_frame_to_fit_screen(self, frame):
+        """
+        Resize the frame to fit the screen while maintaining aspect ratio.
+        Uses 80% of screen width and height as maximum dimensions.
+        """
+        # Get screen dimensions (approximate for Windows)
+        screen_width = 1920  # Default screen width
+        screen_height = 1080  # Default screen height
+        
+        # Use 80% of screen size to ensure it fits
+        max_width = int(screen_width * 0.8)
+        max_height = int(screen_height * 0.8)
+        
+        # Get original frame dimensions
+        height, width = frame.shape[:2]
+        
+        # Calculate scaling factor to fit within max dimensions while maintaining aspect ratio
+        scale_x = max_width / width
+        scale_y = max_height / height
+        scale = min(scale_x, scale_y)
+        
+        # Only resize if the frame is larger than the maximum allowed size
+        if scale < 1:
+            new_width = int(width * scale)
+            new_height = int(height * scale)
+            resized_frame = cv2.resize(frame, (new_width, new_height), interpolation=cv2.INTER_AREA)
+            return resized_frame
+        else:
+            return frame
 
     def run(self):
         while True:
@@ -89,7 +119,9 @@ class ShotDetector:
             self.display_score()
             self.frame_count += 1
 
-            cv2.imshow('Frame', self.frame)
+            # Resize frame to fit screen
+            display_frame = self.resize_frame_to_fit_screen(self.frame)
+            cv2.imshow('Frame', display_frame)
 
             # Close if 'q' is clicked
             if cv2.waitKey(1) & 0xFF == ord('q'):  # higher waitKey slows video down, use 1 for webcam

@@ -1,6 +1,6 @@
-train: ...\train\images
-val: ...\valid\images
-test: ...\test\images
+train: C:\Users\aleqs\OneDrive\Desktop\AsteriX\shotDetector\AI-Basketball-Shot-Detection-Tracker\train\images
+val: C:\Users\aleqs\OneDrive\Desktop\AsteriX\shotDetector\AI-Basketball-Shot-Detection-Tracker\valid\images
+test: C:\Users\aleqs\OneDrive\Desktop\AsteriX\shotDetector\AI-Basketball-Shot-Detection-Tracker\test\images
 
 # replace '...' with your local absolute paths
 
