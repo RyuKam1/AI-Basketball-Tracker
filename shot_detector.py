@@ -24,6 +24,9 @@ class ShotDetector:
 
         # Use video - replace text with your video path
         self.cap = cv2.VideoCapture("video_levana.mp4")
+        
+        # Setup video export
+        self.setup_video_export()
 
         self.ball_pos = []  # array of tuples ((x_pos, y_pos), frame count, width, height, conf)
         self.hoop_pos = []  # array of tuples ((x_pos, y_pos), frame count, width, height, conf)
@@ -46,6 +49,32 @@ class ShotDetector:
         self.overlay_color = (0, 0, 0)
 
         self.run()
+
+    def setup_video_export(self):
+        """
+        Setup video writer for exporting the processed video.
+        """
+        import os
+        from datetime import datetime
+        
+        # Create exports folder if it doesn't exist
+        if not os.path.exists('exports'):
+            os.makedirs('exports')
+        
+        # Get video properties
+        fps = int(self.cap.get(cv2.CAP_PROP_FPS))
+        width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        
+        # Generate output filename with timestamp
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        output_filename = f"exports/shot_detection_{timestamp}.mp4"
+        
+        # Initialize video writer
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        self.video_writer = cv2.VideoWriter(output_filename, fourcc, fps, (width, height))
+        
+        print(f"Video will be exported to: {output_filename}")
 
     def resize_frame_to_fit_screen(self, frame):
         """
@@ -119,6 +148,9 @@ class ShotDetector:
             self.display_score()
             self.frame_count += 1
 
+            # Write frame to video export (use original frame, not resized)
+            self.video_writer.write(self.frame)
+            
             # Resize frame to fit screen
             display_frame = self.resize_frame_to_fit_screen(self.frame)
             cv2.imshow('Frame', display_frame)
@@ -128,7 +160,9 @@ class ShotDetector:
                 break
 
         self.cap.release()
+        self.video_writer.release()
         cv2.destroyAllWindows()
+        print("Video export completed!")
 
     def clean_motion(self):
         # Clean and display ball motion
