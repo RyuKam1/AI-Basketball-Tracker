@@ -23,7 +23,7 @@ class ShotDetector:
         # self.cap = cv2.VideoCapture(0)
 
         # Use video - replace text with your video path
-        self.cap = cv2.VideoCapture("video_levana.mp4")
+        self.cap = cv2.VideoCapture("video_ies.mp4")
         
         # Setup video export
         self.setup_video_export()
@@ -234,4 +234,3 @@ class ShotDetector:
 
 if __name__ == "__main__":
     ShotDetector()
-
