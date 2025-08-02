@@ -2,6 +2,7 @@ from ultralytics import YOLO
 import supervision as sv
 import numpy as np
 import pandas as pd
+import torch  # Add this import
 import sys 
 sys.path.append('../')
 from utils import read_stub, save_stub
@@ -16,6 +17,10 @@ class BallTracker:
     """
     def __init__(self, model_path):
         self.model = YOLO(model_path) 
+        # Force GPU usage if available
+        if torch.cuda.is_available():
+            self.model.to('cuda')
+            self.model.fuse()  # Add this line
 
     def detect_frames(self, frames):
         """
@@ -27,7 +32,7 @@ class BallTracker:
         Returns:
             list: YOLO detection results for each frame.
         """
-        batch_size=20 
+        batch_size = 8  # Reduced from 32 for 4GB VRAM
         detections = [] 
         for i in range(0,len(frames),batch_size):
             detections_batch = self.model.predict(frames[i:i+batch_size],conf=0.5)

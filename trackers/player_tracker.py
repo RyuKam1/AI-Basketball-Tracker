@@ -1,8 +1,9 @@
-from ultralytics import YOLO
+from ultralytics import YOLO  # Add this import
 import supervision as sv
 import sys 
 sys.path.append('../')
 from utils import read_stub, save_stub
+import torch
 
 class PlayerTracker:
     """
@@ -18,7 +19,12 @@ class PlayerTracker:
         Args:
             model_path (str): Path to the YOLO model weights.
         """
-        self.model = YOLO(model_path) 
+        self.model = YOLO(model_path)
+        # Force GPU usage if available
+        if torch.cuda.is_available():
+            self.model.to('cuda')
+            # Use mixed precision to save memory
+            self.model.fuse()  # Fuse layers for faster inference
         self.tracker = sv.ByteTrack()
 
     def detect_frames(self, frames):
@@ -31,7 +37,7 @@ class PlayerTracker:
         Returns:
             list: YOLO detection results for each frame.
         """
-        batch_size=20 
+        batch_size = 8  # Reduced from 32 for 4GB VRAM
         detections = [] 
         for i in range(0,len(frames),batch_size):
             detections_batch = self.model.predict(frames[i:i+batch_size],conf=0.5)

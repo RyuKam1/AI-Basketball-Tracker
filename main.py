@@ -1,5 +1,12 @@
 import os
 import argparse
+import torch
+import gc
+
+# Add these environment variables for better GPU memory management
+os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'max_split_size_mb:128'
+os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
+
 from utils import read_video, save_video
 from trackers import PlayerTracker, BallTracker
 from team_assigner import TeamAssigner
@@ -35,8 +42,39 @@ def parse_args():
                         help='Path to stub directory')
     return parser.parse_args()
 
+def setup_gpu():
+    """Setup GPU if available with memory management"""
+    if torch.cuda.is_available():
+        torch.cuda.set_device(0)
+        print(f"✅ Using GPU: {torch.cuda.get_device_name()}")
+        print(f"   Memory: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.1f} GB")
+        
+        # Set memory fraction to avoid OOM
+        torch.cuda.empty_cache()
+        return True
+    else:
+        print("⚠️  No GPU available, using CPU")
+        return False
+
+def cleanup_gpu_memory():
+    """Clean up GPU memory after processing"""
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+        gc.collect()
+
+def print_gpu_memory():
+    """Print current GPU memory usage"""
+    if torch.cuda.is_available():
+        allocated = torch.cuda.memory_allocated() / 1024**3
+        reserved = torch.cuda.memory_reserved() / 1024**3
+        total = torch.cuda.get_device_properties(0).total_memory / 1024**3
+        print(f"GPU Memory: {allocated:.2f}GB allocated, {reserved:.2f}GB reserved, {total:.1f}GB total")
+
 def main():
     args = parse_args()
+    
+    # Setup GPU
+    use_gpu = setup_gpu()
     
     # Read Video
     video_frames = read_video(args.input_video)
@@ -53,16 +91,22 @@ def main():
                                        read_from_stub=True,
                                        stub_path=os.path.join(args.stub_path, 'player_track_stubs.pkl')
                                       )
+    cleanup_gpu_memory()  # Clean up after player detection
+    print_gpu_memory()
     
     ball_tracks = ball_tracker.get_object_tracks(video_frames,
                                                  read_from_stub=True,
                                                  stub_path=os.path.join(args.stub_path, 'ball_track_stubs.pkl')
                                                 )
+    cleanup_gpu_memory()  # Clean up after ball detection
+    print_gpu_memory()
     ## Run KeyPoint Extractor
     court_keypoints_per_frame = court_keypoint_detector.get_court_keypoints(video_frames,
                                                                     read_from_stub=True,
                                                                     stub_path=os.path.join(args.stub_path, 'court_key_points_stub.pkl')
                                                                     )
+    cleanup_gpu_memory()  # Clean up after keypoint detection
+    print_gpu_memory()
 
     # Remove Wrong Ball Detections
     ball_tracks = ball_tracker.remove_wrong_detections(ball_tracks)
@@ -159,6 +203,10 @@ def main():
 
     # Save video
     save_video(output_video_frames, args.output_video)
+    
+    # Final cleanup
+    cleanup_gpu_memory()
+    print("✅ Processing completed successfully!")
 
 if __name__ == '__main__':
     main()

@@ -1,5 +1,6 @@
 from ultralytics import YOLO
 import supervision as sv
+import torch  # Add this import
 import sys 
 sys.path.append('../')
 from utils import read_stub, save_stub
@@ -12,6 +13,10 @@ class CourtKeypointDetector:
     """
     def __init__(self, model_path):
         self.model = YOLO(model_path)
+        # Force GPU usage if available
+        if torch.cuda.is_available():
+            self.model.to('cuda')
+            self.model.fuse()  # Add this line
     
     def get_court_keypoints(self, frames,read_from_stub=False, stub_path=None):
         """
@@ -33,7 +38,7 @@ class CourtKeypointDetector:
             if len(court_keypoints) == len(frames):
                 return court_keypoints
         
-        batch_size=20
+        batch_size = 8  # Reduced from 20 for 4GB VRAM
         court_keypoints = []
         for i in range(0,len(frames),batch_size):
             detections_batch = self.model.predict(frames[i:i+batch_size],conf=0.5)
