@@ -188,6 +188,7 @@ Contributions are welcome!
 ## 🐜 License
 
 This project is licensed under the MIT License.  
+this branch is stolen for personal uses only :D
 See `LICENSE` for details.
 
 ---
